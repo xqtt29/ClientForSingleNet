@@ -93,7 +93,7 @@ public class MutilThreadService implements Runnable{
             }
 		}catch(Exception e){
 			e.printStackTrace();
-			System.out.println(result);
+			result.put("status", "-1");
 		}
 		
 	}
