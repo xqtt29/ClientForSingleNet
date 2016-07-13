@@ -29,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -69,6 +70,7 @@ public class MainAction {
     	JButton btn_file=new JButton(Global.btnChooseFile);
     	JButton btn_clearfile=new JButton(Global.btnClearFile);
     	JButton btn_send=new JButton(Global.btnSendFile);
+    	JButton btn_sendFast=new JButton(Global.btnSendFileFast);
     	JButton btn_check=new JButton(Global.btnCheckFile);
     	JButton btn_receive=new JButton(Global.btnReceiveFile);
     	panel.add(lab_ip);
@@ -91,7 +93,11 @@ public class MainAction {
     	frame.add(westPan,BorderLayout.WEST);
     	JPanel eastPan=new JPanel();
     	eastPan.setLayout(new GridLayout(2,1));
-    	eastPan.add(btn_send);
+    	JPanel upeastPan=new JPanel();
+    	upeastPan.setLayout(new GridLayout(2,1));
+    	upeastPan.add(btn_send);
+    	upeastPan.add(btn_sendFast);
+    	eastPan.add(upeastPan);
     	eastPan.add(btn_receive);
     	frame.add(eastPan,BorderLayout.EAST);
     	JPanel southPan=new JPanel();
@@ -214,28 +220,6 @@ public class MainAction {
 		});
     	lab_ip.addMouseListener(new MouseAdapter() {
     		public void mouseClicked(MouseEvent e){
-    			Map<String,Object> map=DataOprService.getInstance().getClipboardInfo();
-    			if(map.get("file")!=null){
-    				List<File> list=(List)map.get("file");
-    				for(File f : list){
-    					SendTableModel stm=new SendTableModel();
-    					stm.setFilePath(f.getAbsolutePath());
-    					stm.setFileType(f.isDirectory()?Global.isDirectory:Global.isFile);
-    					String[] temp=f.getAbsolutePath().split("\\".equals(File.separator)?"\\\\":File.separator);
-    					stm.setFileName(temp[temp.length-1]);
-    					DataOprService.getInstance().insertRowForSendTable(sendModel, stm);
-    				}
-    			}else if(map.get("string")!=null){
-    				String str=map.get("string").toString();
-                    String len="";
-					try {
-						len = DataOprService.getInstance().initData(str.getBytes(Global.charFormat).length, 10);
-					} catch (UnsupportedEncodingException e1) {
-					}
-                    String head=Global.sendString+len+str;
-    				DataOprService.getInstance().sendSocketString(txf_ip.getText(),Integer.parseInt(txf_port.getText()),head);
-    				//JOptionPane.showMessageDialog(frame, "发送粘贴板到服务端成功！", "警告",JOptionPane.WARNING_MESSAGE);
-    			}
     		}
 		});
     	lab_port.addMouseListener(new MouseAdapter() {
@@ -345,6 +329,7 @@ public class MainAction {
     		
     	});
     	btn_send.addActionListener(new SendFileAction(frame,txf_ip,txf_port,sendModel));
+    	btn_sendFast.addActionListener(new SendFileFastAction(frame,txf_ip,txf_port,sendModel));
     	btn_check.addActionListener(new CheckFileAction(frame,txf_ip,txf_port,receiveModel));
     	btn_receive.addActionListener(new ReceiveFileAction(frame,txf_ip,txf_port,txf_download,receiveModel));
     	frame.setVisible(true);

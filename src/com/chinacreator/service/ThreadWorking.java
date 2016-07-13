@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import javax.swing.table.DefaultTableModel;
 
+import com.chinacreator.common.Global;
+
 /**
  * @Description
  * 作业线程
@@ -56,6 +58,12 @@ public class ThreadWorking  implements Runnable {
 					service.receiveFile(model, Integer.parseInt(map.get("fileNo").toString()), map.get("filePath").toString(),map.get("fileName").toString(),map.get("savePath").toString(),map.get("fileType").toString());
 				}else if("check".equals(map.get("runType"))){
 					service.checkFile(model);
+				}else if("sendFast".equals(map.get("runType"))){
+					if(Global.isDirectory.equals(map.get("fileType").toString())){
+						service.sendFile(model, Integer.parseInt(map.get("fileNo").toString()), map.get("filePath").toString(),map.get("fileName").toString(),map.get("fileType").toString());
+					}else{
+						service.sendFileFast(model, Integer.parseInt(map.get("fileNo").toString()), map.get("filePath").toString(),map.get("fileName").toString(),map.get("fileType").toString());
+					}
 				}
 			}	
 			

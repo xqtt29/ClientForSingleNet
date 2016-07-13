@@ -21,6 +21,12 @@ public class Global {
 	public static final String sendString="4";
 	
 	public static final String getString="5";
+	
+	public static final String reSendFileMutil="6";
+
+	public static final String queryService="7";
+	
+	public static final String sendFileMutil ="8";
 
 	public static final String[] columns = { "队列序号","文件名称", "处理进度" ,"文件名","文件类型"};
 	
@@ -49,6 +55,8 @@ public class Global {
 	public static final String btnClearFile="清除文件";
 	
 	public static final String btnSendFile="上传文件";
+	
+	public static final String btnSendFileFast="快速上传";
 	
 	public static final String btnCheckFile="查询文件";
 	

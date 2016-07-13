@@ -6,14 +6,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import javax.xml.bind.annotation.XmlElementDecl.GLOBAL;
 
 import com.chinacreator.common.Global;
 import com.chinacreator.entity.ReceiveTableModel;
@@ -36,6 +44,8 @@ public class SocketService {
 		this.frame=frame;
 		this.ip=ip;
 		this.port=port;
+	}
+	public SocketService(){
 	}
 	/**
 	 * @Description
@@ -316,4 +326,146 @@ public class SocketService {
         	JOptionPane.showMessageDialog(frame, e.fillInStackTrace().getMessage(), "警告",JOptionPane.WARNING_MESSAGE);
         }
 	}
+	/**
+	 * @Description
+	 * 客户端上传文件
+	 * 输入socket信息流：前1个字节是操作指令，接着10个字节是上传文件的名称长度，后面接着文件名称，再接着文件信息流
+	 * @Author qiang.zhu
+	 * @param model
+	 * @param no
+	 * @param filePath
+	 * @param fileName
+	 */
+	public boolean sendFileFast(final DefaultTableModel model,final int no,String filePath,String fileName,String fileType){
+        Socket socket = null;
+        DataOutputStream dos = null;
+        DataInputStream dis = null;
+        FileInputStream fis = null;
+        try {
+            try {
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(ip,port),
+                               3 * 1000);
+                dis = new DataInputStream(socket.getInputStream());
+                dos = new DataOutputStream(socket.getOutputStream());
+                dos.write(Global.queryService.getBytes(Global.charFormat),0,1);
+                dos.flush();
+                int serviceSize=dis.readInt();
+                List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
+                for(int i=0;i<serviceSize;i++){
+                	int ipLen=dis.readInt();
+                	byte[] ips=new byte[ipLen];
+                	dis.read(ips);
+                	String _ip=new String(ips,Global.charFormat);
+                	int nameLen=dis.readInt();
+                	byte[] names=new byte[nameLen];
+                	dis.read(names);
+                	String name=new String(names,Global.charFormat);
+                	Map<String,Object> map=new Hashtable<String,Object>();
+            		map.put("ip", _ip);//中间代理上传服务器IP
+            		map.put("port", port);
+            		map.put("name", name);
+            		map.put("targetIp", ip);//目的地服务器IP
+            		list.add(map);
+                }
+                Map<String,Object> map=new Hashtable<String,Object>();
+        		map.put("ip", ip);//中间代理上传服务器IP
+        		map.put("port", port);
+        		map.put("name", "localhost");
+        		map.put("targetIp", ip);//目的地服务器IP
+                list.add(map);
+        		new MutilUploadService().uploadFile(filePath,fileName, list.size(),list);
+        		boolean flag=true;
+        		long totalSize=new File(filePath).length();
+        		DecimalFormat df = new DecimalFormat("0.00");
+        		List<Map<String,Object>> reSendList=new ArrayList<Map<String,Object>>();
+        		while(flag){
+        			int counts=0;
+            		double total=0;
+        			for(Map temp : list){
+        				if("200".equals(temp.get("status"))){
+        					counts++;
+        				}else if("-1".equals(temp.get("status"))){
+        					Map<String,Object> tempMap=new Hashtable<String,Object>();
+        					tempMap.putAll(temp);
+        					reSendList.add(tempMap);
+        					list.remove(temp);
+        					new MutilUploadService().uploadFileResend(filePath,fileName, list,tempMap);
+        					continue;
+        				}
+        				total=total+Double.parseDouble(temp.get("process")==null?"0":temp.get("process").toString());
+        			}
+        			for(Map temp : reSendList){
+        				if("200".equals(temp.get("status"))){
+        					counts++;
+        				}else if("-1".equals(temp.get("status"))){
+        					//
+        				}
+        				total=total+Double.parseDouble(temp.get("process")==null?"0":temp.get("process").toString());
+        			}
+        			DataOprService.getInstance().freshData(model,no-1,Global.sendTabFresh,df.format(total/totalSize*100)+"%");
+        			if(counts==list.size()+reSendList.size()){
+        				flag=false;
+        			}
+        			Thread.currentThread().sleep(100);
+        		}
+                return true;
+            } finally {
+                if (dis != null)
+                    dis.close();
+                if (dos != null)
+                    dos.close();
+                if (fis != null)
+                    fis.close();
+                if (socket != null)
+                    socket.close();
+            }
+        }catch (ConnectException e) {
+        	e.printStackTrace();
+        	DataOprService.getInstance().clearData(model,no-1,Global.sendTabFresh,"服务器连接失败");
+        	return false;
+        }catch (Exception e) {
+        	e.printStackTrace();
+        	DataOprService.getInstance().clearData(model,no-1,Global.sendTabFresh,"失败");
+        	JOptionPane.showMessageDialog(frame, filePath+"上传失败："+e.fillInStackTrace().getMessage(), "警告",JOptionPane.WARNING_MESSAGE);
+        	return false;
+        }
+	}
+	public void reSendFile(Socket resSocket){
+    	int length = 0;
+        Socket socket = null;
+        DataOutputStream dos = null;
+        DataInputStream resDis = null;
+        FileInputStream fis = null;
+        try {
+            try {
+            	resDis = new DataInputStream(resSocket.getInputStream());
+            	int ipLen=resDis.readInt();
+            	byte[] ips= new byte[ipLen];
+            	resDis.read(ips);
+            	String ip=new String(ips,Global.charFormat);
+            	int port=resDis.readInt();
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(ip,port),
+                               3 * 1000);
+                dos = new DataOutputStream(socket.getOutputStream());
+                byte[] sendBytes = new byte[102400];
+                while ((length = resDis.read(sendBytes, 0, sendBytes.length)) > 0) {
+                    dos.write(sendBytes, 0, length);
+                    dos.flush();
+                }
+            } finally {
+                if (resDis != null)
+                	resDis.close();
+                if (dos != null)
+                    dos.close();
+                if (fis != null)
+                    fis.close();
+                if (socket != null)
+                    socket.close();
+            }
+        }catch (Exception e) {
+        	e.printStackTrace();
+        }
+    }
 }
