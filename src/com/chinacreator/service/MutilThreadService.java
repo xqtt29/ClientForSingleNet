@@ -30,13 +30,13 @@ public class MutilThreadService implements Runnable{
 	}
 	@Override
 	public void run() {
+		int length = 0;
 		try{
 			RandomAccessFile raf=new RandomAccessFile(new File(filePath), "r");
 			raf.seek(startNum);
 			Socket socket=null;
 			DataInputStream dis = null;
 			DataOutputStream dos = null;
-			int length = 0;
 	        double sended=0;
 	        byte[] sendBytes = new byte[102400];
 			try {
@@ -94,6 +94,9 @@ public class MutilThreadService implements Runnable{
 		}catch(Exception e){
 			e.printStackTrace();
 			result.put("status", "-1");
+            result.put("startNums", Long.parseLong(result.get("startNums").toString())-length);
+            result.put("stockNums", Long.parseLong(result.get("stockNums").toString())+length);
+            result.put("process", Double.parseDouble(result.get("process").toString())-length);
 		}
 		
 	}

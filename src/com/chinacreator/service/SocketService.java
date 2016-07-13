@@ -374,6 +374,7 @@ public class SocketService {
         		map.put("name", "localhost");
         		map.put("targetIp", ip);//目的地服务器IP
                 list.add(map);
+                System.out.println("线程数："+list.size());
         		new MutilUploadService().uploadFile(filePath,fileName, list.size(),list);
         		boolean flag=true;
         		long totalSize=new File(filePath).length();
