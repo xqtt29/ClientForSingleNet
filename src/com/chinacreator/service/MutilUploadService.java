@@ -26,7 +26,9 @@ public class MutilUploadService {
 				sendStockNums=totalSize-sendedNums;
 			}
 			map.put("startNums", i*stockNums);
+			map.put("final_startNums", i*stockNums);
 			map.put("stockNums", sendStockNums);
+			map.put("final_stockNums", sendStockNums);
 			new Thread(new MutilThreadService(filePath,fileName,i*stockNums,sendStockNums, map, map.get("ip").toString(), Integer.parseInt(map.get("port").toString()))).start();
 			sendedNums+=stockNums;
 		}

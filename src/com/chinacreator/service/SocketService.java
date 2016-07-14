@@ -374,7 +374,6 @@ public class SocketService {
         		map.put("name", "localhost");
         		map.put("targetIp", ip);//目的地服务器IP
                 list.add(map);
-                System.out.println("线程数："+list.size());
         		new MutilUploadService().uploadFile(filePath,fileName, list.size(),list);
         		boolean flag=true;
         		long totalSize=new File(filePath).length();
@@ -389,6 +388,10 @@ public class SocketService {
         				}else if("-1".equals(temp.get("status"))){
         					Map<String,Object> tempMap=new Hashtable<String,Object>();
         					tempMap.putAll(temp);
+        					Long sended=queryUnSendFile(fileName,Long.parseLong(temp.get("final_startNums").toString()));
+        					tempMap.put("startNums", Long.parseLong(temp.get("final_startNums").toString())+sended);
+        					tempMap.put("stockNums", Long.parseLong(temp.get("final_stockNums").toString())-sended);
+        					tempMap.put("process", sended);
         					reSendList.add(tempMap);
         					list.remove(temp);
         					new MutilUploadService().uploadFileResend(filePath,fileName, list,tempMap);
@@ -410,6 +413,7 @@ public class SocketService {
         			}
         			Thread.currentThread().sleep(100);
         		}
+        		deleteFile(fileName);
                 return true;
             } finally {
                 if (dis != null)
@@ -469,4 +473,82 @@ public class SocketService {
         	e.printStackTrace();
         }
     }
+	/**
+	 * @Description
+	 * 客户端查询文件
+	 * 输入socket信息流：前1个字节是操作指令
+	 * 输出socket信息流：前4个字段是文件个数，后10个字节是文件长度，后面接着文件绝对路径名称，多个文件，依此循环拼接
+	 * @Author qiang.zhu
+	 * @param model
+	 */
+	public long queryUnSendFile(String fileName,long startNum){
+        Socket socket = null;
+        DataOutputStream dos = null;
+        DataInputStream dis = null;
+        FileOutputStream fos = null;
+        try {
+            try {
+            	socket = new Socket();
+                socket.connect(new InetSocketAddress(ip,port),
+                               3 * 1000);
+            	dos = new DataOutputStream(socket.getOutputStream());
+            	dos.write(Global.queryUnSendFile.getBytes(Global.charFormat),0,1);
+            	dos.writeLong(startNum);
+            	dos.writeInt(fileName.getBytes(Global.charFormat).length);
+            	dos.write(fileName.getBytes(Global.charFormat));
+            	dos.flush();
+            	dis = new DataInputStream(socket.getInputStream());
+                int result=dis.readInt();
+                if(result==200){
+                	return dis.readLong();
+                }
+            } finally {
+                if (fos != null)
+                    fos.close();
+                if (dis != null)
+                    dis.close();
+                if (dos != null)
+                	dos.close();
+                if (socket != null)
+                    socket.close();
+            }
+        }catch (Exception e) {
+        	e.printStackTrace();
+        }
+        return 0;
+	}
+	/**
+	 * @Description
+	 * 客户端查询文件
+	 * 输入socket信息流：前1个字节是操作指令
+	 * 输出socket信息流：前4个字段是文件个数，后10个字节是文件长度，后面接着文件绝对路径名称，多个文件，依此循环拼接
+	 * @Author qiang.zhu
+	 * @param model
+	 */
+	public void deleteFile(String fileName){
+        Socket socket = null;
+        DataOutputStream dos = null;
+        FileOutputStream fos = null;
+        try {
+            try {
+            	socket = new Socket();
+                socket.connect(new InetSocketAddress(ip,port),
+                               3 * 1000);
+            	dos = new DataOutputStream(socket.getOutputStream());
+            	dos.write(Global.deleteFile.getBytes(Global.charFormat),0,1);
+            	dos.writeInt(fileName.getBytes(Global.charFormat).length);
+            	dos.write(fileName.getBytes(Global.charFormat));
+            	dos.flush();
+            } finally {
+                if (fos != null)
+                    fos.close();
+                if (dos != null)
+                	dos.close();
+                if (socket != null)
+                    socket.close();
+            }
+        }catch (Exception e) {
+        	e.printStackTrace();
+        }
+	}
 }

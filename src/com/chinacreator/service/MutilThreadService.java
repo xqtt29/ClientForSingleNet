@@ -60,6 +60,7 @@ public class MutilThreadService implements Runnable{
                 	dos.writeInt(port);
                 }
             	dos.write(Global.sendFileMutil.getBytes(Global.charFormat),0,1);
+                dos.writeLong(Long.parseLong(result.get("final_startNums").toString()));
                 dos.writeLong(startNum);
                 dos.writeInt(fileName.getBytes(Global.charFormat).length);
                 dos.write(fileName.getBytes(Global.charFormat));

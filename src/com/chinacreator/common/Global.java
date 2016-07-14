@@ -1,6 +1,7 @@
 package com.chinacreator.common;
 
 import java.io.File;
+import java.util.Hashtable;
 import java.util.Map;
 import com.chinacreator.service.DataOprService;
 
@@ -27,6 +28,10 @@ public class Global {
 	public static final String queryService="7";
 	
 	public static final String sendFileMutil ="8";
+	
+	public static final String queryUnSendFile ="9";
+	
+	public static final String deleteFile ="0";
 
 	public static final String[] columns = { "队列序号","文件名称", "处理进度" ,"文件名","文件类型"};
 	
